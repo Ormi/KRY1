@@ -5,7 +5,7 @@
 # xormos00@stud.fit.vutbr.cz
 # March 2019
 
-from satispy import Variable
+from satispy import Variable, Cnf
 from satispy.solver import Minisat
 import string
 
@@ -17,45 +17,45 @@ BIS_ENCf = 'bis.txt.enc'
 GIF_ENCf = 'hint.gif.enc'
 SUPER_CIPHER_ENCf = 'super_cipher.py.enc'
 
+# Files gathered from manual solution
 N_B = 32
 N = 8 * N_B
-vs = [Variable("i" + str(i)) for i in range(N)]
 
+vectorSolution = []
 solver = Minisat();
 
-
-def sat_to_number(res, var):
-    r = 0
-    for i in range(1, N):
-        if (res[var[i]]):
-            r = r | 1 << (i - 1)
-    if (res[var[0]]):
-        r = r | 1 << (N - 1)
-    return r
-
-
+# define bytes by prediate of bool algebra
 def satify_bit(difference, v, v1, v2):
     if not difference:
         return (-v & -v1 & -v2) | (v & (v1 | v2))
     else:
         return (v & -v1 & -v2) | (-v & (v1 | v2))
-# def rule(x, y, z):
-#     return (x | y | z) & (x | -y | -z) & (-x | y | -z) & (-x | -y | -z)    
-
 
 def stepReversedSAT(keyMidStream):
-    formula = satify_bit(keyMidStream & 1, vs[0], vs[1], vs[2])
-    print(formula)
-    for i in range(1, N):
-        formula = formula & satify_bit((keyMidStream >> i) & 1, vs[i], vs[(i + 1) % N], vs[(i + 2) % N])
+    result = 0
 
-    return sat_to_number(solver.solve(formula), vs)
+    # create all posibble formulas
+    formula = satify_bit(keyMidStream & 1, vectorSolution[0], vectorSolution[1], vectorSolution[2])
+    for i in range(1, N):
+        formula = formula & satify_bit((keyMidStream >> i) & 1, vectorSolution[i], vectorSolution[(i + 1) % N], vectorSolution[(i + 2) % N])
+
+    # solve individual formulas
+    formulaSolved = solver.solve(formula)
+    for x in range(1, N):
+        if (formulaSolved[vectorSolution[x]]):
+            result = result | 1 << (x - 1)
+    if (formulaSolved[vectorSolution[0]]):
+        result = result | 1 << (N - 1)
+    return result
 
 if __name__ == '__main__':
     try:
         PATH = sys.argv[1]
     except:
         pass   
+
+    for i in range(N):
+        vectorSolution.append(Variable("i" + str(i)))        
 
     # read only first 32 bites of files
     bis_txt = open(PATH + BISf, "rb").read(N_B)
@@ -68,7 +68,4 @@ if __name__ == '__main__':
     for i in range(N // 2):
         keyStream = stepReversedSAT(keyStream)
 
-    # print(keyStream)
     print(keyStream.to_bytes(N_B  , 'little').decode())
-    # key = keyStream.to_bytes(N_B, 'little').decode('ascii')
-    # print("".join(filter(lambda x: x in string.printable, key)), end='')

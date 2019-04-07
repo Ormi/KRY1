@@ -96,89 +96,28 @@ def stepReversed(keyMidStream):
 
 # decrypt part of super_cipher.py.enc file stored in folder 'in' (this was the first step to crack the cipher)
 # after decrypting this file I was able to copy the 'step' function and constants
-def xorKnownTexts(encryptedFile, decryptedFile):
-    bis_txt = open('super_cipher_partial.py', "rb").read()
-    bis_enc = open(GIF_ENCf, "rb").read()
-    script_enc = open(encryptedFile, "rb").read()
+def xorKnownTexts():
+    # get the first part of secret script
+    bis_txt = open(PATH + BIS_ENCf, "rb").read()
+    bis_enc = open(PATH + BISf, "rb").read()
+    script_enc = open(PATH + SUPER_CIPHER_ENCf, "rb").read()
 
     # get the key stream used to encrypt the message
     key_stream = [a ^ b for (a, b) in zip(bis_txt, bis_enc)]
-    print(key_stream)
     # decrypt the script
     decrypted_script = [a ^ b for (a, b) in zip(script_enc, key_stream)]
+    # print super_cipher first part
+    print(bytes(decrypted_script));
 
-    # write into file
-    output = open(decryptedFile, 'wb')
-    output.write(bytes(decrypted_script))
-    print(decrypted_script)
-    output.close()
+    print("\n")
 
-
-# decrypt the super_cipher.py.enc file
-# after getting functions from partial super_cipher.py file i was able to generate the key stream end decrypt the file
-# def decrypt_super_cipher_file_full():
-#     # read first 32 bytes from each file
-#     bis_txt = open(BISf, "rb").read(N_B)
-#     bis_enc = open(BIS_ENCf, "rb").read(N_B)
-
-#     # get the key stream
-#     key_stream = [a ^ b for (a, b) in zip(bis_txt, bis_enc)]
-
-#     # open encrypted script
-#     script_enc = open(SUPER_CIPHER_ENCf, "rb")
-
-#     # encrypt
-#     output = open('super_cipher.py', 'wb')
-#     enc_byte = script_enc.read(N_B)
-#     while enc_byte:
-#         # decrypt bytes
-#         decrypted_bytes = [a ^ b for (a, b) in zip(enc_byte, key_stream)]
-
-#         # write bytes into file
-#         output.write(bytes(decrypted_bytes))
-
-#         # get next key
-#         key_stream = step(int.from_bytes(key_stream, 'little')).to_bytes(N_B, 'little')
-
-#         # get next byte
-#         enc_byte = script_enc.read(N_B)
-
-#     # close file
-#     output.close()
-
-
-# # decrypt the hint.gif.enc file
-# # after getting functions from partial super_cipher.py file i am able to generate the key stream end decrypt the file
-# def decrypt_gif_file():
-#     # read first 32 bytes from each file
-#     bis_txt = open(BISf, "rb").read(N_B)
-#     bis_enc = open(GIF_ENCf, "rb").read(N_B)
-
-#     # get the key stream
-#     key_stream = [a ^ b for (a, b) in zip(bis_txt, bis_enc)]
-
-#     # open encrypted script
-#     gif_enc = open(GIF_ENCf, "rb")
-
-#     # encrypt
-#     output = open('hint.gif', 'wb')
-#     enc_byte = gif_enc.read(N_B)
-#     while enc_byte:
-#         # decrypt bytes
-#         decrypted_bytes = [a ^ b for (a, b) in zip(enc_byte, key_stream)]
-
-#         # write bytes into file
-#         output.write(bytes(decrypted_bytes))
-
-#         # get next key
-#         key_stream = step(int.from_bytes(key_stream, 'little')).to_bytes(N_B, 'little')
-
-#         # get next byte
-#         enc_byte = gif_enc.read(N_B)
-
-#     # close file
-#     output.close()
-
+    # get the second part of secret script
+    super_cipher = open(PATH + SUPER_CIPHER_ENCf, "rb").read()
+    gif_enc = open(PATH + GIF_ENCf, "rb").read()
+    # xor files
+    key_stream2 = [a ^ b for (a, b) in zip(super_cipher, gif_enc)]
+    # print xor and see result
+    print(bytes(key_stream2))
 
 # Project assigment function which with help of keystream brake cipher key
 # using all permutations of SUB array
@@ -191,36 +130,28 @@ def brakeCipherKey():
     keyStream = int.from_bytes(bis_txt, 'little') ^ int.from_bytes(bis_enc, 'little') 
     defaultKeyStream = keyStream;
 
-    for x in range(1<<8):
-        # Generate all posibble SUB combinations
-        s=bin(x)[2:]
-        s='0'*(8-len(s))+s
+    keyStream = defaultKeyStream
 
-        for y in range(len(SUB)):
-            SUB[y] = int(s[y])
-
-        keyStream = defaultKeyStream
-
-        # loop as many times as was in original cipher scrit
-        for z in range(N//2):
-            # if reverse steo function returns -1 it means DEAD END
-            # go to next SUB combination
-            if(keyStream == -1):
-                break            
-            keyStream = stepReversed(keyStream)
-
-        # if reverse step function returns -1 start again with next iteration
+    # loop as many times as was in original cipher scrit
+    for z in range(N//2):
+        # if reverse steo function returns -1 it means DEAD END
+        # go to next SUB combination
         if(keyStream == -1):
-            pass        
-        # otherwise try to decode it to ascii
-        # if it will crash bytes are wrond, continue to next iteration
-        try:
-            print(keyStream.to_bytes(N_B  , 'little').decode())
-        except:
-            pass
-        # otherwise we have key!
-        else:
-            exit(0)
+            break            
+        keyStream = stepReversed(keyStream)
+
+    # if reverse step function returns -1 start again with next iteration
+    if(keyStream == -1):
+        pass        
+    # otherwise try to decode it to ascii
+    # if it will crash bytes are wrond, continue to next iteration
+    try:
+        print(keyStream.to_bytes(N_B  , 'little').decode())
+    except:
+        pass
+    # otherwise we have key!
+    else:
+        exit(0)
 
 if __name__ == '__main__':
     try:
@@ -228,4 +159,4 @@ if __name__ == '__main__':
     except:
         pass    
     brakeCipherKey()
-    # xorKnownTexts('super_cipher.py', 'hint.gif')    
+    # xorKnownTexts();   
