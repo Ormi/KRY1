@@ -1,3 +1,5 @@
+Hodnotenie 5/8
+
 # Rucne riesenie
 Skript solution.py nepotrebuje žiadne dalšie dodatočne inštalácie. Spúšta sa s jediným argumentom, ktorým je cesta k zdrojovým súborom popisaným v kapitole Úvod.
 
